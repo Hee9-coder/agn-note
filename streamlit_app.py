@@ -59,14 +59,19 @@ if mode == "🖼️ OCR 자동 입력":
         }
         url = f"https://naveropenapi.apigw.ntruss.com/vision/v1/ocr"
         response = requests.post(url, headers=headers, json=data)
-
-
         if response.status_code == 200:
             result_text = "\n".join([field["inferText"] for field in response.json()["images"][0]["fields"]])
-            st.text_area("📝 자동 인식된 텍스트", result_text, height=200)
-            알 = result_text
+            st.text_area("📝 자동 인식된 텍스트", result_text, height=150)
+            알 = st.text_area("1️⃣ 알게 된 점", value=result_text)
         else:
             st.error("OCR 분석 중 오류가 발생했습니다.")
+            알 = st.text_area("1️⃣ 알게 된 점", value="")
+    else:
+        알 = st.text_area("1️⃣ 알게 된 점", value="")
+    궁 = st.text_area("2️⃣ 궁금한 점", value="")
+    나 = st.text_area("3️⃣ 나의 생각", value="")
+    submitted = st.button("✏️ 분석하기")
+
 
 
 # 자동 입력 + 수정 가능
