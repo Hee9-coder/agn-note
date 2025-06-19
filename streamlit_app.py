@@ -5,27 +5,42 @@ import base64
 import time
 import openai
 
-st.title("🎈 나의 알・궁・나 노트")
+
+st.title("📗 나의 알・궁・나 노트")
+
 
 st.markdown("""
-학생이 손글씨로 쓴 노트를 업로드하면 자동 인식해드려요.  
-또는 직접 입력해서 분석할 수도 있어요!
+            
+            **나의 노트가 자동으로 쌓인다!**
+    
+            오늘 배운 내용을 기록만 해 주세요. 
+            복습 문제를 내 드릴게요.
+   
+            이미 손글씨로 쓴 노트가 있다면 
+            사진을 찍어 올려주세요. 자동으로 대신 써 드릴게요.  
+    
+            *이미지 자동 입력으로 잘 인식되지 않으면 직접 입력해 주세요!*
+            
 """)
 
 # 입력 방식 선택
-mode = st.radio("✍ 입력 방식 선택", ["🖼 OCR 자동 입력", "⌨️ 수동 입력"], horizontal=True)
+mode = st.radio("✍ 입력 방식 선택", ["🗂️ 이미지 자동 입력", "⌨️ 수동 입력"], horizontal=True)
+
 
 # 초기 변수
 알, 궁, 나 = "", "", ""
 
+
 # OCR 모드
-if mode == "🖼 OCR 자동 입력":
+if mode == "🗂️ 이미지 자동 입력":
     uploaded_file = st.file_uploader("이미지 업로드 (JPG/PNG)", type=["jpg", "jpeg", "png"])
+
 
     if uploaded_file:
         st.info("🔍 글자 인식 중입니다...")
         image_bytes = uploaded_file.read()
         encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+
 
         # 네이버 OCR API 호출
         headers = {
@@ -40,12 +55,14 @@ if mode == "🖼 OCR 자동 입력":
             "timestamp": int(time.time() * 1000)
         }
 
+
         try:
             res = requests.post("https://naveropenapi.apigw.ntruss.com/vision/v1/ocr", headers=headers, data=json.dumps(payload))
             result = res.json()
             fields = result["images"][0]["fields"]
             full_text = "\n".join([f["inferText"] for f in fields])
             st.text_area("🧾 인식된 전체 텍스트", value=full_text, height=150)
+
 
             # 간단한 구분 추출
             lower = full_text.lower()
@@ -59,29 +76,36 @@ if mode == "🖼 OCR 자동 입력":
         except Exception as e:
             st.error(f"OCR 오류: {e}")
 
+
     # 자동 입력 + 수정 가능
     알 = st.text_area("1️⃣ 알게 된 점", value=알)
     궁 = st.text_area("2️⃣ 궁금한 점", value=궁)
     나 = st.text_area("3️⃣ 나의 생각", value=나)
+
 
     if st.button("🤖 분석하기"):
         with st.spinner("GPT가 분석 중입니다..."):
             prompt = f"""
             아래는 한 초등학생이 쓴 알·궁·나 학습 노트입니다.
 
+
             [알게 된 점]
             {알}
+
 
             [궁금한 점]
             {궁}
 
+
             [나의 생각]
             {나}
 
+
             위의 내용을 요약해서 다음 항목으로 구분해줘:
             1. 알게 된 점의 핵심 키워드 3개
-            2. 궁금한 점의 질문 의도 (예: 사실 확인, 확장 사고, 감정 표현 등)
-            3. 나의 생각에서 드러난 학생의 태도나 감정
+            2. 블룸의 단계 중 어디에 해당하는지 (지식, 이해, 적용, 분석, 평가, 창조)
+            3. 궁금한 점의 질문 단계 (예: 사실 확인, 확장 사고, 감정 표현 등)
+            4. 나의 생각에서 드러난 학생의 태도나 감정
             """
             try:
                 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -96,32 +120,39 @@ if mode == "🖼 OCR 자동 입력":
             except Exception as e:
                 st.error(f"GPT 오류: {e}")
 
+
 # 수동 입력 모드
 else:
     with st.form("note_form"):
         알 = st.text_area("1️⃣ 알게 된 점", placeholder="예: 지구의 자전 때문에 낮과 밤이 생긴다.")
         궁 = st.text_area("2️⃣ 궁금한 점", placeholder="예: 그럼 지구가 자전하지 않으면 어떻게 될까?")
-        나 = st.text_area("3️⃣ 나의 생각", placeholder="예: 나는 별과 자전이 연결된다는 걸 알게 되었다.")
+        나 = st.text_area("3️⃣ 나의 생각", placeholder="예: 나는 밤하늘의 별과 자전이 연결된다는 걸 알게 되었다.")
         submitted = st.form_submit_button("✍ 분석하기")
+
 
     if submitted:
         with st.spinner("GPT가 분석 중입니다..."):
             prompt = f"""
             아래는 한 초등학생이 쓴 알·궁·나 학습 노트입니다.
 
+
             [알게 된 점]
             {알}
+
 
             [궁금한 점]
             {궁}
 
+
             [나의 생각]
             {나}
 
+
             위의 내용을 요약해서 다음 항목으로 구분해줘:
             1. 알게 된 점의 핵심 키워드 3개
-            2. 궁금한 점의 질문 의도 (예: 사실 확인, 확장 사고, 감정 표현 등)
-            3. 나의 생각에서 드러난 학생의 태도나 감정
+            2. 블룸의 단계 중 어디에 해당하는지 (지식, 이해, 적용, 분석, 평가, 창조)
+            3. 궁금한 점의 질문 단계 (예: 사실 확인, 확장 사고, 감정 표현 등)
+            4. 나의 생각에서 드러난 학생의 태도나 감정
             """
             try:
                 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
